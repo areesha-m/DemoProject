@@ -1,0 +1,192 @@
+package com.example.myprofileapp
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.myprofileapp.ui.theme.MyProfileScreen
+import java.util.Calendar
+import android.app.DatePickerDialog
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.text.font.FontWeight
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            MyProfileScreen {
+                ProfileContent()
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfileContent() {
+    val viewModel: ProfileViewModel = viewModel()
+    val firstName by viewModel.firstName.collectAsState()
+    val lastName by viewModel.lastName.collectAsState()
+    val dob by viewModel.dob.collectAsState()
+    val nationality by viewModel.nationality.collectAsState()
+    val gender by viewModel.gender.collectAsState()
+    val isFormComplete by viewModel.isFormComplete.collectAsState(false)
+
+    val context = LocalContext.current
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("My Profile", fontSize = 16.sp) },
+                navigationIcon = {
+                    IconButton(onClick = { /* Handle back press */ }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            Column() {
+                Button(
+                    onClick = { /* Handle Save */ },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    enabled = isFormComplete
+                ) {
+                    Text(text = "Save Changes")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.Top
+        ) {
+            Text("Profile Name", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text("This is displayed on your profile", color = Color.Gray, fontSize = 14.sp)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = firstName,
+                onValueChange = { firstName = it },
+                label = { Text("First Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = lastName, // Corrected mistake here
+                onValueChange = { lastName = it },
+                label = { Text("Last Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text("Account details", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text("This is not visible to other users", color = Color.Gray, fontSize = 14.sp)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_calendar_month),
+                    contentDescription = "Calendar Icon",
+                    modifier = Modifier.size(16.dp)
+                )
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Text("Date of birth", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            }
+
+            // 🛠 Date of Birth Field with Calendar
+            val calendar = Calendar.getInstance()
+            val year = calendar.get(Calendar.YEAR)
+            val month = calendar.get(Calendar.MONTH)
+            val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+            val datePickerDialog = DatePickerDialog(
+                context,
+                { _, selectedYear, selectedMonth, selectedDayOfMonth ->
+                    dob = "${selectedMonth + 1}/$selectedDayOfMonth/$selectedYear"
+                },
+                year, month, day
+            )
+
+            OutlinedTextField(
+                value = dob,
+                onValueChange = { },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { datePickerDialog.show() }, // 👈 Open dialog on tap
+                placeholder = { Text("MM/DD/YYYY") },
+                trailingIcon = {
+                    IconButton(onClick = { datePickerDialog.show() }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.event),
+                            contentDescription = "Calendar Icon"
+                        )
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Nationality", fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+            OutlinedTextField(
+                value = nationality,
+                onValueChange = { nationality = it },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Gender", fontWeight = FontWeight.Bold)
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                RadioButton(
+                    selected = selectedGender == "Male",
+                    onClick = { selectedGender = "Male" }
+                )
+                Text(text = "Male", modifier = Modifier.padding(end = 16.dp))
+
+                RadioButton(
+                    selected = selectedGender == "Female",
+                    onClick = { selectedGender = "Female" }
+                )
+                Text(text = "Female")
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                RadioButton(
+                    selected = selectedGender == "Prefer not to say",
+                    onClick = { selectedGender = "Prefer not to say" }
+                )
+                Text(text = "Prefer not to say")
+            }
+        }
+    }
+}
