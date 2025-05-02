@@ -94,20 +94,20 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             try {
                 Log.d("ProfileViewModel", "Saving profile: $profile")
 
-                // Update the existing profile
                 val existingProfile = userProfileDao.getUserProfile()
+
                 if (existingProfile != null) {
-                    // If there's an existing profile, update it
-                    profile.id = existingProfile.id  // Preserve the ID of the existing profile
+
+                    profile.id = existingProfile.id
                     userProfileDao.updateUserProfile(profile)
                     Log.d("ProfileViewModel", "Profile updated successfully")
+
                 } else {
-                    // If no profile exists, insert a new one (fallback case)
+
                     userProfileDao.insertUserProfile(profile)
                     Log.d("ProfileViewModel", "Profile inserted successfully")
                 }
 
-                // Now try to load the profile data again after saving or updating
                 val updatedProfile = userProfileDao.getUserProfile()
                 Log.d("ProfileViewModel", "Loaded profile after save/update: $updatedProfile")
 

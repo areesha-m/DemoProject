@@ -26,9 +26,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.myprofileapp.navigation.Screen
 import com.example.myprofileapp.ui.theme.ProfileSummaryScreen
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
