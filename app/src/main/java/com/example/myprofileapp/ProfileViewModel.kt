@@ -3,6 +3,7 @@ package com.example.myprofileapp
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
 import com.example.myprofileapp.data.DatabaseHelper
 import com.example.myprofileapp.data.UserProfile
 import kotlinx.coroutines.launch
@@ -82,7 +83,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     }
 
     // Save profile data to the database
-    fun saveProfileData() {
+    // Save profile data to the database (Update existing profile)
+    suspend fun saveProfileData() {
         val profile = UserProfile(
             firstName = firstName.value,
             lastName = lastName.value,
@@ -91,26 +93,48 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             gender = gender.value
         )
         viewModelScope.launch {
-            userProfileDao.insertUserProfile(profile)
+            try {
+                Log.d("ProfileViewModel", "Saving profile: $profile")
 
-            val updatedProfile = userProfileDao.getUserProfile()
-            updatedProfile?.let {
-                _firstName.value = it.firstName
-                _lastName.value = it.lastName
-                _dob.value = it.dob
-                _nationality.value = it.nationality
-                _gender.value = it.gender
+                // Update the existing profile
+                val existingProfile = userProfileDao.getUserProfile()
+                if (existingProfile != null) {
+                    // If there's an existing profile, update it
+                    profile.id = existingProfile.id  // Preserve the ID of the existing profile
+                    userProfileDao.updateUserProfile(profile)
+                    Log.d("ProfileViewModel", "Profile updated successfully")
+                } else {
+                    // If no profile exists, insert a new one (fallback case)
+                    userProfileDao.insertUserProfile(profile)
+                    Log.d("ProfileViewModel", "Profile inserted successfully")
+                }
+
+                // Now try to load the profile data again after saving or updating
+                val updatedProfile = userProfileDao.getUserProfile()
+                Log.d("ProfileViewModel", "Loaded profile after save/update: $updatedProfile")
+
+                updatedProfile?.let {
+                    _firstName.value = it.firstName
+                    _lastName.value = it.lastName
+                    _dob.value = it.dob
+                    _nationality.value = it.nationality
+                    _gender.value = it.gender
+                }
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error saving profile data", e)
             }
-
         }
     }
 
     // Load profile data from the database asynchronously
-    private fun loadProfileData() {
+    fun loadProfileData() {
         viewModelScope.launch {
+            _isLoading.value = true
+            delay(2000) // Simulate delay
             val profile = userProfileDao.getUserProfile()
+            Log.d("ProfileViewModel", "Loaded profile: $profile")
+
             profile?.let {
-                delay(2000)
                 _firstName.value = it.firstName
                 _lastName.value = it.lastName
                 _dob.value = it.dob
@@ -119,6 +143,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 checkFormComplete()  // Check form completion after loading the profile
                 _isLoading.value = false
             }
+
         }
     }
 }

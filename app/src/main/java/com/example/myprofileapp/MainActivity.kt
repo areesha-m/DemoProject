@@ -26,6 +26,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.myprofileapp.navigation.Screen
 import com.example.myprofileapp.ui.theme.ProfileSummaryScreen
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
@@ -34,14 +36,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             MyProfileScreen {
                 val navController = rememberNavController()
+                val viewModel: ProfileViewModel = viewModel()  // Shared ViewModel instance
                 NavHost(navController = navController, startDestination = Screen.EditProfile.route) {
                     composable(Screen.EditProfile.route) {
-                        ProfileContent(onSaveComplete = {
+                        ProfileContent(viewModel = viewModel, onSaveComplete = {
                             navController.navigate(Screen.ProfileSummary.route)
                         })
                     }
                     composable(Screen.ProfileSummary.route) {
-                        ProfileSummaryScreen(onEditClicked = {
+                        ProfileSummaryScreen(viewModel = viewModel, onEditClicked = {
                             navController.popBackStack()
                         })
                     }
@@ -53,8 +56,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileContent(onSaveComplete: () -> Unit) {
-    val viewModel: ProfileViewModel = viewModel()
+fun ProfileContent(viewModel: ProfileViewModel, onSaveComplete: () -> Unit) {
     val firstName by viewModel.firstName.collectAsState()
     val lastName by viewModel.lastName.collectAsState()
     val dob by viewModel.dob.collectAsState()
@@ -62,6 +64,7 @@ fun ProfileContent(onSaveComplete: () -> Unit) {
     val gender by viewModel.gender.collectAsState()
     val isFormComplete by viewModel.isFormComplete.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()  // Collecting the loading state
+    val coroutineScope = rememberCoroutineScope() // ✅ Create a scope tied to Composable lifecycle
 
     val context = LocalContext.current
 
@@ -79,8 +82,12 @@ fun ProfileContent(onSaveComplete: () -> Unit) {
         bottomBar = {
             Column {
                 Button(
-                    onClick = { viewModel.saveProfileData()
-                        onSaveComplete()
+                    onClick = {
+                        coroutineScope.launch {
+                            viewModel.saveProfileData()
+                            viewModel.loadProfileData()
+                            onSaveComplete()
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
