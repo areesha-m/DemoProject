@@ -82,9 +82,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 gender.value.isNotEmpty()
     }
 
-    // Save profile data to the database
-    // Save profile data to the database (Update existing profile)
-    suspend fun saveProfileData() {
+    fun saveProfileData() {
         val profile = UserProfile(
             firstName = firstName.value,
             lastName = lastName.value,
