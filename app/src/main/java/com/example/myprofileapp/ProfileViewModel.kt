@@ -139,8 +139,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 _nationality.value = it.nationality
                 _gender.value = it.gender
                 checkFormComplete()  // Check form completion after loading the profile
-                _isLoading.value = false
             }
+            _isLoading.value = false
 
         }
     }

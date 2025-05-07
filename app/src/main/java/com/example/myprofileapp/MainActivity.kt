@@ -61,8 +61,8 @@ fun ProfileContent(viewModel: ProfileViewModel, onSaveComplete: () -> Unit) {
     val nationality by viewModel.nationality.collectAsState()
     val gender by viewModel.gender.collectAsState()
     val isFormComplete by viewModel.isFormComplete.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()  // Collecting the loading state
-    val coroutineScope = rememberCoroutineScope() // ✅ Create a scope tied to Composable lifecycle
+    val isLoading by viewModel.isLoading.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
 
     val context = LocalContext.current
 
@@ -108,7 +108,6 @@ fun ProfileContent(viewModel: ProfileViewModel, onSaveComplete: () -> Unit) {
             verticalArrangement = Arrangement.Top
         ) {
             if (isLoading) {
-                // Show loading spinner while data is being fetched
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
             } else {
 
