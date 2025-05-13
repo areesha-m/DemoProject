@@ -1,20 +1,22 @@
-package com.example.myprofileapp
+package com.example.myprofileapp.model
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import android.util.Log
-import com.example.myprofileapp.data.DatabaseHelper
+// Import the repository
+import com.example.myprofileapp.data.IProfileRepository // Or com.example.myprofileapp.repository.IProfileRepository
 import com.example.myprofileapp.data.UserProfile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.delay
 
-
-class ProfileViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val userProfileDao = DatabaseHelper.getDatabase(application).userProfileDao()
+// ViewModel now takes IProfileRepository as a constructor parameter
+class ProfileViewModel(
+    application: Application,
+    private val profileRepository: IProfileRepository // Use the interface
+) : AndroidViewModel(application) {
 
     private val _firstName = MutableStateFlow("")
     val firstName: StateFlow<String> = _firstName
@@ -37,43 +39,35 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-
     init {
-        // Asynchronously load profile data
         loadProfileData()
     }
 
-    // Method to update first name
     fun updateFirstName(newFirstName: String) {
         _firstName.value = newFirstName
         checkFormComplete()
     }
 
-    // Method to update last name
     fun updateLastName(newLastName: String) {
         _lastName.value = newLastName
         checkFormComplete()
     }
 
-    // Method to update date of birth
     fun updateDob(newDob: String) {
         _dob.value = newDob
         checkFormComplete()
     }
 
-    // Method to update nationality
     fun updateNationality(newNationality: String) {
         _nationality.value = newNationality
         checkFormComplete()
     }
 
-    // Method to update gender
     fun updateGender(newGender: String) {
         _gender.value = newGender
         checkFormComplete()
     }
 
-    // Method to check if the form is complete
     private fun checkFormComplete() {
         _isFormComplete.value = firstName.value.isNotEmpty() &&
                 lastName.value.isNotEmpty() &&
@@ -84,6 +78,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
     fun saveProfileData() {
         val profile = UserProfile(
+            // id will be handled by repository/DAO (autoGenerate or based on existing)
             firstName = firstName.value,
             lastName = lastName.value,
             dob = dob.value,
@@ -91,57 +86,60 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             gender = gender.value
         )
         viewModelScope.launch {
+            _isLoading.value = true // Indicate loading during save
+            Log.d("ProfileViewModel", "Attempting to save profile: $profile")
             try {
-                Log.d("ProfileViewModel", "Saving profile: $profile")
-
-                val existingProfile = userProfileDao.getUserProfile()
-
-                if (existingProfile != null) {
-
-                    profile.id = existingProfile.id
-                    userProfileDao.updateUserProfile(profile)
-                    Log.d("ProfileViewModel", "Profile updated successfully")
-
-                } else {
-
-                    userProfileDao.insertUserProfile(profile)
-                    Log.d("ProfileViewModel", "Profile inserted successfully")
-                }
-
-                val updatedProfile = userProfileDao.getUserProfile()
-                Log.d("ProfileViewModel", "Loaded profile after save/update: $updatedProfile")
-
+                profileRepository.saveUserProfile(profile)
+                Log.d("ProfileViewModel", "Profile save operation completed via repository.")
+                // Optionally, reload data or assume repository handles updates correctly
+                // For simplicity, let's reload to ensure UI consistency if repository doesn't directly update ViewModel states
+                val updatedProfile = profileRepository.getUserProfile()
                 updatedProfile?.let {
                     _firstName.value = it.firstName
                     _lastName.value = it.lastName
                     _dob.value = it.dob
                     _nationality.value = it.nationality
                     _gender.value = it.gender
+                    checkFormComplete()
                 }
             } catch (e: Exception) {
-                Log.e("ProfileViewModel", "Error saving profile data", e)
+                Log.e("ProfileViewModel", "Error saving profile data via repository", e)
+            } finally {
+                _isLoading.value = false // Stop loading after save attempt
             }
         }
     }
 
-    // Load profile data from the database asynchronously
     fun loadProfileData() {
         viewModelScope.launch {
             _isLoading.value = true
-            delay(2000) // Simulate delay
-            val profile = userProfileDao.getUserProfile()
-            Log.d("ProfileViewModel", "Loaded profile: $profile")
+            delay(2000)
+            Log.d("ProfileViewModel", "Loading profile data via repository...")
+            try {
+                val profile = profileRepository.getUserProfile()
+                Log.d("ProfileViewModel", "Loaded profile from repository: $profile")
 
-            profile?.let {
-                _firstName.value = it.firstName
-                _lastName.value = it.lastName
-                _dob.value = it.dob
-                _nationality.value = it.nationality
-                _gender.value = it.gender
-                checkFormComplete()  // Check form completion after loading the profile
+                profile?.let {
+                    _firstName.value = it.firstName
+                    _lastName.value = it.lastName
+                    _dob.value = it.dob
+                    _nationality.value = it.nationality
+                    _gender.value = it.gender
+                    checkFormComplete()
+                } ?: run {
+                    // Handle case where no profile exists yet, reset fields if necessary
+                    _firstName.value = ""
+                    _lastName.value = ""
+                    _dob.value = ""
+                    _nationality.value = ""
+                    _gender.value = ""
+                    checkFormComplete()
+                }
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error loading profile data via repository", e)
+            } finally {
+                _isLoading.value = false
             }
-            _isLoading.value = false
-
         }
     }
 }

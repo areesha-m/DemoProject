@@ -20,10 +20,13 @@ import android.app.DatePickerDialog
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.font.FontWeight
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.myprofileapp.data.DatabaseHelper
+import com.example.myprofileapp.data.ProfileRepository
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.myprofileapp.model.ProfileViewModel
+import com.example.myprofileapp.model.ProfileViewModelFactory
 import com.example.myprofileapp.navigation.Screen
 import com.example.myprofileapp.ui.theme.ProfileSummaryScreen
 import kotlinx.coroutines.launch
@@ -31,10 +34,20 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Setup for ViewModel with repository
+        val application = this.application // Get application instance
+        val userProfileDao = DatabaseHelper.getDatabase(application).userProfileDao()
+        val profileRepository = ProfileRepository(userProfileDao) // Use concrete class for instantiation
+        val viewModelFactory = ProfileViewModelFactory(application, profileRepository)
+
         setContent {
-            MyProfileScreen {
+            MyProfileScreen { // Assuming MyProfileScreen is a Composable that sets up the theme
                 val navController = rememberNavController()
-                val viewModel: ProfileViewModel = viewModel()  // Shared ViewModel instance
+                val viewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = viewModelFactory
+                )
+
                 NavHost(navController = navController, startDestination = Screen.EditProfile.route) {
                     composable(Screen.EditProfile.route) {
                         ProfileContent(viewModel = viewModel, onSaveComplete = {
@@ -71,7 +84,7 @@ fun ProfileContent(viewModel: ProfileViewModel, onSaveComplete: () -> Unit) {
             CenterAlignedTopAppBar(
                 title = { Text("My Profile", fontSize = 16.sp) },
                 navigationIcon = {
-                    IconButton(onClick = {  }) {
+                    IconButton(onClick = { /* Handle back action if necessary */ }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -82,24 +95,26 @@ fun ProfileContent(viewModel: ProfileViewModel, onSaveComplete: () -> Unit) {
                 Button(
                     onClick = {
                         coroutineScope.launch {
-                            viewModel.saveProfileData()
-                            viewModel.loadProfileData()
+                            viewModel.saveProfileData() // This will now use the repository
+                            // The loadProfileData within saveProfileData (or called after) will refresh state
                             onSaveComplete()
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    enabled = isFormComplete
+                    enabled = isFormComplete && !isLoading // Disable button also when loading
                 ) {
-                    Text(text = "Save Changes")
+                    if (isLoading && isFormComplete) { // Show progress in button if saving
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text(text = "Save Changes")
+                    }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp)) // Keep if needed for layout
             }
-
         }
-    ) {
-        innerPadding ->
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
@@ -107,10 +122,11 @@ fun ProfileContent(viewModel: ProfileViewModel, onSaveComplete: () -> Unit) {
                 .fillMaxSize(),
             verticalArrangement = Arrangement.Top
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            if (isLoading && firstName.isBlank()) { // Show global loading indicator only on initial load
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             } else {
-
                 Text("Profile Name", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text("This is displayed on your profile", color = Color.Gray, fontSize = 14.sp)
 
@@ -120,7 +136,8 @@ fun ProfileContent(viewModel: ProfileViewModel, onSaveComplete: () -> Unit) {
                     value = firstName,
                     onValueChange = { viewModel.updateFirstName(it) },
                     label = { Text("First Name") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading // Disable fields when loading
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -129,7 +146,8 @@ fun ProfileContent(viewModel: ProfileViewModel, onSaveComplete: () -> Unit) {
                     value = lastName,
                     onValueChange = { viewModel.updateLastName(it) },
                     label = { Text("Last Name") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -144,47 +162,43 @@ fun ProfileContent(viewModel: ProfileViewModel, onSaveComplete: () -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_calendar_month),
+                        painter = painterResource(id = R.drawable.ic_calendar_month), // Ensure this drawable exists
                         contentDescription = "Calendar Icon",
                         modifier = Modifier.size(16.dp)
                     )
-
                     Spacer(modifier = Modifier.width(6.dp))
-
                     Text("Date of birth", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
 
-                // 🛠 Date of Birth Field with Calendar
                 val calendar = Calendar.getInstance()
-                val year = calendar.get(Calendar.YEAR)
-                val month = calendar.get(Calendar.MONTH)
-                val day = calendar.get(Calendar.DAY_OF_MONTH)
-
                 val datePickerDialog = DatePickerDialog(
                     context,
                     { _, selectedYear, selectedMonth, selectedDayOfMonth ->
                         viewModel.updateDob("${selectedMonth + 1}/$selectedDayOfMonth/$selectedYear")
                     },
-                    year, month, day
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
                 )
 
                 OutlinedTextField(
                     value = dob,
-                    onValueChange = { newValue ->
-                        viewModel.updateDob(newValue)
-                    },
+                    onValueChange = {  },
+                    readOnly = true, // Make it read-only, value changed by picker
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { datePickerDialog.show() },
+                        .clickable(enabled = !isLoading) { datePickerDialog.show() },
                     placeholder = { Text("MM/DD/YYYY") },
+                    label = { Text("Date of Birth") }, // Added label for consistency
                     trailingIcon = {
-                        IconButton(onClick = { datePickerDialog.show() }) {
+                        IconButton(onClick = { datePickerDialog.show() }, enabled = !isLoading) {
                             Icon(
-                                painter = painterResource(id = R.drawable.event),
+                                painter = painterResource(id = R.drawable.event), // Ensure this drawable exists
                                 contentDescription = "Calendar Icon"
                             )
                         }
-                    }
+                    },
+                    enabled = !isLoading
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -198,31 +212,35 @@ fun ProfileContent(viewModel: ProfileViewModel, onSaveComplete: () -> Unit) {
                 OutlinedTextField(
                     value = nationality,
                     onValueChange = { viewModel.updateNationality(it) },
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text("Nationality") }, // Added label
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text("Gender", fontWeight = FontWeight.Bold)
-
+                // Consider using a RadioButtonGroup Composable if this section grows
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(
                         selected = gender == "Male",
-                        onClick = { viewModel.updateGender("Male") }
+                        onClick = { viewModel.updateGender("Male") },
+                        enabled = !isLoading
                     )
                     Text(text = "Male", modifier = Modifier.padding(end = 16.dp))
 
                     RadioButton(
                         selected = gender == "Female",
-                        onClick = { viewModel.updateGender("Female") }
+                        onClick = { viewModel.updateGender("Female") },
+                        enabled = !isLoading
                     )
                     Text(text = "Female")
                 }
-
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(
                         selected = gender == "Prefer not to say",
-                        onClick = { viewModel.updateGender("Prefer not to say") }
+                        onClick = { viewModel.updateGender("Prefer not to say") },
+                        enabled = !isLoading
                     )
                     Text(text = "Prefer not to say")
                 }
