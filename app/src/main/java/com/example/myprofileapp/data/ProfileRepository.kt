@@ -4,17 +4,23 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+// IProfileRepository remains the same as its client (ViewModel) needs both read and save
 interface IProfileRepository {
     suspend fun getUserProfile(): UserProfile?
     suspend fun saveUserProfile(userProfile: UserProfile)
 }
 
-class ProfileRepository(private val userProfileDao: UserProfileDao) : IProfileRepository {
+// ProfileRepository now depends on the more specific DAO capabilities
+class ProfileRepository(
+    private val profileReader: UserProfileReader,
+    private val profileWriter: UserProfileWriter
+) : IProfileRepository {
 
     override suspend fun getUserProfile(): UserProfile? {
         return withContext(Dispatchers.IO) {
             try {
-                userProfileDao.getUserProfile()
+                // Now uses the profileReader
+                profileReader.getUserProfile()
             } catch (e: Exception) {
                 Log.e("ProfileRepository", "Error getting user profile", e)
                 null
@@ -25,14 +31,16 @@ class ProfileRepository(private val userProfileDao: UserProfileDao) : IProfileRe
     override suspend fun saveUserProfile(userProfile: UserProfile) {
         withContext(Dispatchers.IO) {
             try {
-                val existingProfile = userProfileDao.getUserProfile()
+                // Needs to read first to check if exists, so profileReader is still needed here too.
+                val existingProfile = profileReader.getUserProfile()
                 if (existingProfile != null) {
-                    // Preserve the ID if updating an existing profile
                     val profileToUpdate = userProfile.copy(id = existingProfile.id)
-                    userProfileDao.updateUserProfile(profileToUpdate)
+                    // Now uses the profileWriter
+                    profileWriter.updateUserProfile(profileToUpdate)
                     Log.d("ProfileRepository", "Profile updated: $profileToUpdate")
                 } else {
-                    userProfileDao.insertUserProfile(userProfile)
+                    // Now uses the profileWriter
+                    profileWriter.insertUserProfile(userProfile)
                     Log.d("ProfileRepository", "Profile inserted: $userProfile")
                 }
             } catch (e: Exception) {

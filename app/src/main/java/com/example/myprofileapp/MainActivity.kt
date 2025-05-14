@@ -35,14 +35,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Setup for ViewModel with repository
-        val application = this.application // Get application instance
+        val application = this.application
         val userProfileDao = DatabaseHelper.getDatabase(application).userProfileDao()
-        val profileRepository = ProfileRepository(userProfileDao) // Use concrete class for instantiation
+
+        val profileRepository = ProfileRepository(
+            profileReader = userProfileDao,
+            profileWriter = userProfileDao
+        )
         val viewModelFactory = ProfileViewModelFactory(application, profileRepository)
 
         setContent {
-            MyProfileScreen { // Assuming MyProfileScreen is a Composable that sets up the theme
+            MyProfileScreen {
                 val navController = rememberNavController()
                 val viewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
                     factory = viewModelFactory
@@ -95,8 +98,7 @@ fun ProfileContent(viewModel: ProfileViewModel, onSaveComplete: () -> Unit) {
                 Button(
                     onClick = {
                         coroutineScope.launch {
-                            viewModel.saveProfileData() // This will now use the repository
-                            // The loadProfileData within saveProfileData (or called after) will refresh state
+                            viewModel.saveProfileData()
                             onSaveComplete()
                         }
                     },
