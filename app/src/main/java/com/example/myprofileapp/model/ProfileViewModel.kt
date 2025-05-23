@@ -12,6 +12,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.Date
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -21,15 +25,23 @@ class ProfileViewModel @Inject constructor(
 
     private val _firstName = MutableStateFlow("")
     val firstName: StateFlow<String> = _firstName
+    private val _firstNameError = MutableStateFlow<String?>(null)
+    val firstNameError: StateFlow<String?> = _firstNameError
 
     private val _lastName = MutableStateFlow("")
     val lastName: StateFlow<String> = _lastName
+    private val _lastNameError = MutableStateFlow<String?>(null)
+    val lastNameError: StateFlow<String?> = _lastNameError
 
     private val _dob = MutableStateFlow("")
     val dob: StateFlow<String> = _dob
+    private val _dobError = MutableStateFlow<String?>(null)
+    val dobError: StateFlow<String?> = _dobError
 
     private val _nationality = MutableStateFlow("")
     val nationality: StateFlow<String> = _nationality
+    private val _nationalityError = MutableStateFlow<String?>(null)
+    val nationalityError: StateFlow<String?> = _nationalityError
 
     private val _gender = MutableStateFlow("")
     val gender: StateFlow<String> = _gender
@@ -44,40 +56,142 @@ class ProfileViewModel @Inject constructor(
         loadProfileData()
     }
 
+    private fun validateFirstName(name: String = _firstName.value): Boolean {
+        return if (name.isBlank()) {
+            _firstNameError.value = "First name cannot be empty"
+            false
+        } else if (!name.matches(Regex("^[a-zA-ZÀ-ÿ]+(([',. -][a-zA-ZÀ-ÿ ])?[a-zA-ZÀ-ÿ]*)*$"))) { // Regex allows more international characters
+            _firstNameError.value = "Invalid characters in first name"
+            false
+        }
+        else {
+            _firstNameError.value = null
+            true
+        }
+    }
+
+    private fun validateLastName(name: String = _lastName.value): Boolean {
+        return if (name.isBlank()) {
+            _lastNameError.value = "Last name cannot be empty"
+            false
+        } else if (!name.matches(Regex("^[a-zA-ZÀ-ÿ]+(([',. -][a-zA-ZÀ-ÿ ])?[a-zA-ZÀ-ÿ]*)*$"))) { // Regex allows more international characters
+            _lastNameError.value = "Invalid characters in last name"
+            false
+        }
+        else {
+            _lastNameError.value = null
+            true
+        }
+    }
+
+    private fun validateDob(dateStr: String = _dob.value): Boolean {
+        if (dateStr.isBlank()) {
+            _dobError.value = "Date of birth cannot be empty"
+            return false
+        }
+        val dateFormat = SimpleDateFormat("MM/dd/yyyy", Locale.US)
+        dateFormat.isLenient = false
+        try {
+            val parsedDate = dateFormat.parse(dateStr)
+            if (parsedDate != null) {
+                val calendar = Calendar.getInstance()
+                calendar.time = parsedDate
+                // Basic check: year should be reasonable (e.g., not before 1900)
+                if (calendar.get(Calendar.YEAR) < 1900) {
+                    _dobError.value = "Year seems too far in the past"
+                    return false
+                }
+                if (parsedDate.after(Date())) {
+                    _dobError.value = "Date of birth cannot be in the future"
+                    return false
+                }
+            } else { // Should not happen if parse is successful & non-null
+                _dobError.value = "Invalid date"
+                return false
+            }
+        } catch (e: java.text.ParseException) {
+            _dobError.value = "Invalid date format (MM/DD/YYYY)"
+            return false
+        }
+        _dobError.value = null
+        return true
+    }
+
+    private fun validateNationality(nat: String = _nationality.value): Boolean {
+        return if (nat.isBlank()) {
+            _nationalityError.value = "Nationality cannot be empty"
+            false
+        } else {
+            _nationalityError.value = null
+            true
+        }
+    }
+
+    private fun validateAllFields(): Boolean {
+        // Validate all fields and capture their individual validity
+        val isFirstNameValid = validateFirstName()
+        val isLastNameValid = validateLastName()
+        val isDobValid = validateDob()
+        val isNationalityValid = validateNationality()
+        val isGenderSelected = _gender.value.isNotEmpty()
+
+        // Update the overall form completeness state based on these results
+        checkFormCompleteInternal(
+            isFirstNameValid, isLastNameValid, isDobValid, isNationalityValid, isGenderSelected
+        )
+        // Return true if all individual validations passed
+        return isFirstNameValid && isLastNameValid && isDobValid && isNationalityValid && isGenderSelected
+    }
+
+
     fun updateFirstName(newFirstName: String) {
         _firstName.value = newFirstName
-        checkFormComplete()
+        validateFirstName(newFirstName) // Validate after update
+        checkFormCompleteInternal() // Update overall form completeness
     }
 
     fun updateLastName(newLastName: String) {
         _lastName.value = newLastName
-        checkFormComplete()
+        validateLastName(newLastName)
+        checkFormCompleteInternal()
     }
 
     fun updateDob(newDob: String) {
         _dob.value = newDob
-        checkFormComplete()
+        validateDob(newDob)
+        checkFormCompleteInternal()
     }
 
     fun updateNationality(newNationality: String) {
         _nationality.value = newNationality
-        checkFormComplete()
+        validateNationality(newNationality)
+        checkFormCompleteInternal()
     }
 
     fun updateGender(newGender: String) {
         _gender.value = newGender
-        checkFormComplete()
+        checkFormCompleteInternal()
     }
 
-    private fun checkFormComplete() {
-        _isFormComplete.value = firstName.value.isNotEmpty() &&
-                lastName.value.isNotEmpty() &&
-                dob.value.isNotEmpty() &&
-                nationality.value.isNotEmpty() &&
-                gender.value.isNotEmpty()
+    private fun checkFormCompleteInternal(
+        isFirstNameValid: Boolean = _firstNameError.value == null && _firstName.value.isNotEmpty(),
+        isLastNameValid: Boolean = _lastNameError.value == null && _lastName.value.isNotEmpty(),
+        isDobValid: Boolean = _dobError.value == null && _dob.value.isNotEmpty(),
+        isNationalityValid: Boolean = _nationalityError.value == null && _nationality.value.isNotEmpty(),
+        isGenderSelected: Boolean = _gender.value.isNotEmpty()
+    ) {
+        _isFormComplete.value = isFirstNameValid && isLastNameValid &&
+                isDobValid && isNationalityValid && isGenderSelected
     }
 
     fun saveProfileData() {
+        val isFormValid = validateAllFields() // Run all validations
+        if (!isFormValid) {
+            Log.d("ProfileViewModel", "Form is invalid. Save aborted.")
+            // Optionally, set a general "form invalid" message for the UI if needed
+            return // Abort save if form isn't valid
+        }
+
         val profile = UserProfile(
             // id will be handled by repository/DAO (autoGenerate or based on existing)
             firstName = firstName.value,
@@ -94,15 +208,7 @@ class ProfileViewModel @Inject constructor(
                 Log.d("ProfileViewModel", "Profile save operation completed via repository.")
                 // Optionally, reload data or assume repository handles updates correctly
                 // For simplicity, let's reload to ensure UI consistency if repository doesn't directly update ViewModel states
-                val updatedProfile = profileRepository.getUserProfile()
-                updatedProfile?.let {
-                    _firstName.value = it.firstName
-                    _lastName.value = it.lastName
-                    _dob.value = it.dob
-                    _nationality.value = it.nationality
-                    _gender.value = it.gender
-                    checkFormComplete()
-                }
+
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error saving profile data via repository", e)
             } finally {
@@ -126,18 +232,24 @@ class ProfileViewModel @Inject constructor(
                     _dob.value = it.dob
                     _nationality.value = it.nationality
                     _gender.value = it.gender
-                    checkFormComplete()
                 } ?: run {
-                    // Handle case where no profile exists yet, reset fields if necessary
+                    // If no profile exists, reset fields to empty
                     _firstName.value = ""
                     _lastName.value = ""
                     _dob.value = ""
                     _nationality.value = ""
                     _gender.value = ""
-                    checkFormComplete()
                 }
+                validateAllFields()
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error loading profile data via repository", e)
+                // Reset fields and validate if loading fails
+                _firstName.value = ""
+                _lastName.value = ""
+                _dob.value = ""
+                _nationality.value = ""
+                _gender.value = ""
+                validateAllFields()
             } finally {
                 _isLoading.value = false
             }
