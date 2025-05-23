@@ -20,36 +20,32 @@ import android.app.DatePickerDialog
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.font.FontWeight
-import com.example.myprofileapp.data.DatabaseHelper
-import com.example.myprofileapp.data.ProfileRepository
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.myprofileapp.model.ProfileViewModel
-import com.example.myprofileapp.model.ProfileViewModelFactory
 import com.example.myprofileapp.navigation.Screen
 import com.example.myprofileapp.ui.theme.ProfileSummaryScreen
 import kotlinx.coroutines.launch
+import dagger.hilt.android.AndroidEntryPoint // Import this
+import androidx.hilt.navigation.compose.hiltViewModel // Import this for Hilt ViewModel in Compose
 
+/**
+ * The main activity of the application.
+ *
+ * This activity is responsible for setting up the UI and navigation for the profile feature.
+ * It initializes the necessary dependencies, such as the database, repository, and view model.
+ * It also defines the navigation graph using Jetpack Compose Navigation.
+ */
+@AndroidEntryPoint // <<< THIS ANNOTATION IS CRUCIAL
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val application = this.application
-        val userProfileDao = DatabaseHelper.getDatabase(application).userProfileDao()
-
-        val profileRepository = ProfileRepository(
-            profileReader = userProfileDao,
-            profileWriter = userProfileDao
-        )
-        val viewModelFactory = ProfileViewModelFactory(application, profileRepository)
-
         setContent {
             MyProfileScreen {
                 val navController = rememberNavController()
-                val viewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-                    factory = viewModelFactory
-                )
+                val viewModel: ProfileViewModel = hiltViewModel() //
 
                 NavHost(navController = navController, startDestination = Screen.EditProfile.route) {
                     composable(Screen.EditProfile.route) {

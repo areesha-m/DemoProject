@@ -4,16 +4,17 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import android.util.Log
-// Import the repository
-import com.example.myprofileapp.data.IProfileRepository // Or com.example.myprofileapp.repository.IProfileRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import com.example.myprofileapp.data.IProfileRepository
 import com.example.myprofileapp.data.UserProfile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.delay
 
-// ViewModel now takes IProfileRepository as a constructor parameter
-class ProfileViewModel(
+@HiltViewModel
+class ProfileViewModel @Inject constructor(
     application: Application,
     private val profileRepository: IProfileRepository // Use the interface
 ) : AndroidViewModel(application) {
