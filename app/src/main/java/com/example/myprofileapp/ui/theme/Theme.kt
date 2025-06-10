@@ -14,20 +14,20 @@ import androidx.compose.ui.platform.LocalContext
 
 // Define your custom colors matching the screenshot
 private val LightColors = lightColorScheme(
-    primary = Color(0xFFD32F2F), // Red buttons
+    primary = Color(0xFF4B4848), // Red buttons
     onPrimary = Color(0xFFFFFFFF), // White text on red buttons
-    secondary = Color(0xFF888888),
+    secondary = Color(0xFFD32F2F),
     background = Color(0xFFFFFFFF),
     surface = Color(0xFFFFFFFF),
-    onSecondary = Color(0xFF000000),
+    onSecondary = Color(0xFFFFFFFF),
     onBackground = Color(0xFF000000), // Black text elsewhere
     onSurface = Color(0xFF000000) // Black text on surface components
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFD32F2F),
-    onPrimary = Color(0xFFFFFFFF),
-    secondary = Color(0xFFAAAAAA),
+    primary = Color(0xFFFFFFFF),
+    onPrimary = Color(0xFF000000),
+    secondary = Color(0xFFD32F2F),
     background = Color(0xFF121212),
     surface = Color(0xFF121212),
     onSecondary = Color(0xFFFFFFFF),

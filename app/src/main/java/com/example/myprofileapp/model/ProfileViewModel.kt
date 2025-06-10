@@ -60,7 +60,7 @@ class ProfileViewModel @Inject constructor(
         return if (name.isBlank()) {
             _firstNameError.value = "First name cannot be empty"
             false
-        } else if (!name.matches(Regex("^[a-zA-ZÀ-ÿ]+(([',. -][a-zA-ZÀ-ÿ ])?[a-zA-ZÀ-ÿ]*)*$"))) { // Regex allows more international characters
+        } else if (!name.matches(Regex("^[a-zA-ZÀ-ÿ]+(([',. -][a-zA-ZÀ-ÿ ])?[a-zA-ZÀ-ÿ]*)*$"))) {
             _firstNameError.value = "Invalid characters in first name"
             false
         }
@@ -74,7 +74,7 @@ class ProfileViewModel @Inject constructor(
         return if (name.isBlank()) {
             _lastNameError.value = "Last name cannot be empty"
             false
-        } else if (!name.matches(Regex("^[a-zA-ZÀ-ÿ]+(([',. -][a-zA-ZÀ-ÿ ])?[a-zA-ZÀ-ÿ]*)*$"))) { // Regex allows more international characters
+        } else if (!name.matches(Regex("^[a-zA-ZÀ-ÿ]+(([',. -][a-zA-ZÀ-ÿ ])?[a-zA-ZÀ-ÿ]*)*$"))) {
             _lastNameError.value = "Invalid characters in last name"
             false
         }
@@ -142,7 +142,6 @@ class ProfileViewModel @Inject constructor(
         // Return true if all individual validations passed
         return isFirstNameValid && isLastNameValid && isDobValid && isNationalityValid && isGenderSelected
     }
-
 
     fun updateFirstName(newFirstName: String) {
         _firstName.value = newFirstName
