@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.implementation
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -42,7 +44,9 @@ android {
 }
 
 dependencies {
-
+    implementation(libs.okhttp)
+    implementation(libs.retrofit.v290)
+    implementation(libs.converter.gson.v290)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -51,7 +55,10 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.okhttp3.logging.interceptor)
     implementation(libs.material3)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.media3.common.ktx)
     testImplementation(libs.junit)

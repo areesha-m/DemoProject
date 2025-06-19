@@ -11,7 +11,6 @@ import com.example.myprofileapp.data.UserProfile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -20,7 +19,8 @@ import java.util.Date
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     application: Application,
-    private val profileRepository: IProfileRepository // Use the interface
+    private val profileRepository: IProfileRepository
+    // Removed CountryRepository dependency - handled by CountryViewModel
 ) : AndroidViewModel(application) {
 
     private val _firstName = MutableStateFlow("")
@@ -53,6 +53,7 @@ class ProfileViewModel @Inject constructor(
     val isLoading: StateFlow<Boolean> = _isLoading
 
     init {
+        // Only load profile data - country fetching is handled by CountryViewModel
         loadProfileData()
     }
 
@@ -105,7 +106,7 @@ class ProfileViewModel @Inject constructor(
                     _dobError.value = "Date of birth cannot be in the future"
                     return false
                 }
-            } else { // Should not happen if parse is successful & non-null
+            } else {
                 _dobError.value = "Invalid date"
                 return false
             }
@@ -128,25 +129,22 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun validateAllFields(): Boolean {
-        // Validate all fields and capture their individual validity
         val isFirstNameValid = validateFirstName()
         val isLastNameValid = validateLastName()
         val isDobValid = validateDob()
         val isNationalityValid = validateNationality()
         val isGenderSelected = _gender.value.isNotEmpty()
 
-        // Update the overall form completeness state based on these results
         checkFormCompleteInternal(
             isFirstNameValid, isLastNameValid, isDobValid, isNationalityValid, isGenderSelected
         )
-        // Return true if all individual validations passed
         return isFirstNameValid && isLastNameValid && isDobValid && isNationalityValid && isGenderSelected
     }
 
     fun updateFirstName(newFirstName: String) {
         _firstName.value = newFirstName
-        validateFirstName(newFirstName) // Validate after update
-        checkFormCompleteInternal() // Update overall form completeness
+        validateFirstName(newFirstName)
+        checkFormCompleteInternal()
     }
 
     fun updateLastName(newLastName: String) {
@@ -184,34 +182,30 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun saveProfileData() {
-        val isFormValid = validateAllFields() // Run all validations
+        val isFormValid = validateAllFields()
         if (!isFormValid) {
             Log.d("ProfileViewModel", "Form is invalid. Save aborted.")
-            // Optionally, set a general "form invalid" message for the UI if needed
-            return // Abort save if form isn't valid
+            return
         }
 
         val profile = UserProfile(
-            // id will be handled by repository/DAO (autoGenerate or based on existing)
             firstName = firstName.value,
             lastName = lastName.value,
             dob = dob.value,
             nationality = nationality.value,
             gender = gender.value
         )
+
         viewModelScope.launch {
-            _isLoading.value = true // Indicate loading during save
+            _isLoading.value = true
             Log.d("ProfileViewModel", "Attempting to save profile: $profile")
             try {
                 profileRepository.saveUserProfile(profile)
                 Log.d("ProfileViewModel", "Profile save operation completed via repository.")
-                // Optionally, reload data or assume repository handles updates correctly
-                // For simplicity, let's reload to ensure UI consistency if repository doesn't directly update ViewModel states
-
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error saving profile data via repository", e)
             } finally {
-                _isLoading.value = false // Stop loading after save attempt
+                _isLoading.value = false
             }
         }
     }
@@ -219,7 +213,6 @@ class ProfileViewModel @Inject constructor(
     fun loadProfileData() {
         viewModelScope.launch {
             _isLoading.value = true
-            delay(2000)
             Log.d("ProfileViewModel", "Loading profile data via repository...")
             try {
                 val profile = profileRepository.getUserProfile()
@@ -232,7 +225,6 @@ class ProfileViewModel @Inject constructor(
                     _nationality.value = it.nationality
                     _gender.value = it.gender
                 } ?: run {
-                    // If no profile exists, reset fields to empty
                     _firstName.value = ""
                     _lastName.value = ""
                     _dob.value = ""
@@ -242,7 +234,6 @@ class ProfileViewModel @Inject constructor(
                 validateAllFields()
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error loading profile data via repository", e)
-                // Reset fields and validate if loading fails
                 _firstName.value = ""
                 _lastName.value = ""
                 _dob.value = ""
