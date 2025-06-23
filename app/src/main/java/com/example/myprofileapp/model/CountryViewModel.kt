@@ -7,18 +7,19 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.util.Log
+import com.example.myprofileapp.utils.NetworkChecker
 import kotlinx.coroutines.CoroutineExceptionHandler
 
 @HiltViewModel
 class CountryViewModel @Inject constructor(
-    internal val repository: CountryRepository
+    internal val repository: CountryRepository,
+    private val networkChecker: NetworkChecker
 ) : ViewModel() {
 
     private val _countryNames = MutableStateFlow<List<String>>(emptyList())
     val countryNames: StateFlow<List<String>> = _countryNames
 
     internal val _loadCountries = MutableStateFlow(false)
-    val loadCountries: StateFlow<Boolean> = _loadCountries
 
     private val _isError = MutableStateFlow(false)
     val isError: StateFlow<Boolean> = _isError
@@ -36,11 +37,10 @@ class CountryViewModel @Inject constructor(
             is NetworkException -> throwable.message ?: "Network error occurred"
             else -> "An unexpected error occurred: ${throwable.localizedMessage ?: "Unknown error"}"
         }
-        _countryNames.value = emptyList() // Clear countries on error
+        _countryNames.value = emptyList()
     }
 
     init {
-        // Initial fetch when the ViewModel is created
         fetchCountries()
     }
 
@@ -49,6 +49,14 @@ class CountryViewModel @Inject constructor(
             _loadCountries.value = true
             _isError.value = false
             _errorMessage.value = ""
+
+            if (!networkChecker.hasInternetConnection()) {
+                _loadCountries.value = false
+                _isError.value = true
+                _errorMessage.value = "No internet connection. Please check your network."
+                _countryNames.value = emptyList()
+                return@launch
+            }
 
             try {
                 Log.d("CountryViewModel", "Starting to fetch countries...")

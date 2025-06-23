@@ -9,3 +9,4 @@ sealed class Screen(val route: String) {
     object SelectMotorsSubCategory : Screen("select_motors_subcategory")
     object CreateAd : Screen("create_ad_details_form")
 }
+

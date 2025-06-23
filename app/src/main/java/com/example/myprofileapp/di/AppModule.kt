@@ -2,8 +2,7 @@ package com.example.myprofileapp.di
 
 import android.content.Context
 import androidx.room.Room
-import androidx.room.RoomDatabase // For JournalMode
-import com.example.myprofileapp.data.AdListingDao // Import AdListingDao
+import com.example.myprofileapp.data.AdListingDao
 import com.example.myprofileapp.data.AppDatabase
 import com.example.myprofileapp.data.IListingRepository
 import com.example.myprofileapp.data.IProfileRepository
@@ -16,45 +15,47 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import dagger.hilt.android.components.ViewModelComponent
+import com.example.myprofileapp.utils.NetworkChecker
+
 
 @Module
-@InstallIn(SingletonComponent::class) // Dependencies live as long as the application
+@InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
     @Provides
-    @Singleton // Ensures a single instance of AppDatabase throughout the app
+    @Singleton
     fun provideAppDatabase(@ApplicationContext appContext: Context): AppDatabase {
         return Room.databaseBuilder(
             appContext,
             AppDatabase::class.java,
-            "user_profile_db" // Existing database name
+            "user_profile_db"
         )
-            // .setJournalMode(RoomDatabase.JournalMode.TRUNCATE) // Optional: if WAL causes issues on some emulators/devices
-            .fallbackToDestructiveMigration() // For easier schema changes during development ONLY
+            .fallbackToDestructiveMigration()
             .build()
     }
 
     @Provides
-    @Singleton // Ensures a single instance of UserProfileDao
+    @Singleton
     fun provideUserProfileDao(appDatabase: AppDatabase): UserProfileDao {
         return appDatabase.userProfileDao()
     }
 
     @Provides
-    @Singleton // Ensures a single instance of AdListingDao
-    fun provideAdListingDao(appDatabase: AppDatabase): AdListingDao { // <<< THIS IS THE FIX
+    @Singleton
+    fun provideAdListingDao(appDatabase: AppDatabase): AdListingDao {
         return appDatabase.adListingDao()
     }
 }
 
 @Module
-@InstallIn(SingletonComponent::class) // Dependencies live as long as the application
+@InstallIn(SingletonComponent::class)
 object RepositoryModule {
 
     @Provides
-    @Singleton // Ensures a single instance of IProfileRepository
+    @Singleton
     fun provideProfileRepository(userProfileDao: UserProfileDao): IProfileRepository {
-        // UserProfileDao implements UserProfileReader and UserProfileWriter
+
         return ProfileRepository(
             profileReader = userProfileDao,
             profileWriter = userProfileDao
@@ -62,8 +63,21 @@ object RepositoryModule {
     }
 
     @Provides
-    @Singleton // Ensures a single instance of IListingRepository
+    @Singleton
     fun provideListingRepository(adListingDao: AdListingDao): IListingRepository {
         return ListingRepository(adListingDao)
     }
 }
+
+@Module
+@InstallIn(ViewModelComponent::class)
+object AppModule {
+
+    @Provides
+    fun provideNetworkChecker(
+        @ApplicationContext context: Context
+    ): NetworkChecker {
+        return NetworkChecker(context)
+    }
+}
+
