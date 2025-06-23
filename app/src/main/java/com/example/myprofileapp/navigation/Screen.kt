@@ -4,7 +4,6 @@ sealed class Screen(val route: String) {
     object EditProfile : Screen("edit_profile")
     object ProfileSummary : Screen("profile_summary")
     object MyAds : Screen("my_ads")
-    object CreateAdFlow : Screen("create_ad_flow")
     object SelectCity : Screen("select_city")
     object SelectCategory : Screen("select_category")
     object SelectMotorsSubCategory : Screen("select_motors_subcategory")

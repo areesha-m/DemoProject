@@ -418,7 +418,7 @@ private fun NavigationButtons(
     ) {
         Button(
             onClick = {
-                navController.navigate(Screen.CreateAdFlow.route)
+                navController.navigate(Screen.SelectCity.route)
             },
             modifier = Modifier
                 .weight(1f)
