@@ -430,7 +430,7 @@ private fun NavigationButtons(
                 contentColor = MaterialTheme.colorScheme.onSecondary
             )
         ) {
-            Text(text = "Create New Ad")
+            Text(text = "Create Ad")
         }
 
         Button(
@@ -449,10 +449,25 @@ private fun NavigationButtons(
         ) {
             Text(text = "View My Ads")
         }
+        Button(
+            onClick = {
+                navController.navigate(Screen.OrdersScreen.route)
+            },
+            modifier = Modifier
+                .weight(1f)
+                .padding(vertical = 8.dp),
+            enabled = !isLoading,
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary
+            )
+        ) {
+            Text(text = "Orders")
+        }
     }
 }
 
-// UI State data class to manage profile content state
 data class ProfileContentUiState(
     val firstName: String,
     val lastName: String,

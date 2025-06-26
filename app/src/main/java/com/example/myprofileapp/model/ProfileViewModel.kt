@@ -20,7 +20,6 @@ import java.util.Date
 class ProfileViewModel @Inject constructor(
     application: Application,
     private val profileRepository: IProfileRepository
-    // Removed CountryRepository dependency - handled by CountryViewModel
 ) : AndroidViewModel(application) {
 
     private val _firstName = MutableStateFlow("")
@@ -53,7 +52,6 @@ class ProfileViewModel @Inject constructor(
     val isLoading: StateFlow<Boolean> = _isLoading
 
     init {
-        // Only load profile data - country fetching is handled by CountryViewModel
         loadProfileData()
     }
 
@@ -97,7 +95,7 @@ class ProfileViewModel @Inject constructor(
             if (parsedDate != null) {
                 val calendar = Calendar.getInstance()
                 calendar.time = parsedDate
-                // Basic check: year should be reasonable (e.g., not before 1900)
+
                 if (calendar.get(Calendar.YEAR) < 1900) {
                     _dobError.value = "Year seems too far in the past"
                     return false

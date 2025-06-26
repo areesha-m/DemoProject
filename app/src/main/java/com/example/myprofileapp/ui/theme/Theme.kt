@@ -38,7 +38,7 @@ private val DarkColors = darkColorScheme(
 @Composable
 fun MyProfileScreen(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false, // We disable dynamicColor to always use our custom color
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

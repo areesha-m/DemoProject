@@ -31,7 +31,6 @@ object DatabaseModule {
             AppDatabase::class.java,
             "user_profile_db"
         )
-            .fallbackToDestructiveMigration()
             .build()
     }
 

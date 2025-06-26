@@ -10,6 +10,7 @@ import com.example.myprofileapp.model.CreateAdViewModel
 import com.example.myprofileapp.model.ProfileViewModel
 import com.example.myprofileapp.ui.theme.MyAdsScreen
 import com.example.myprofileapp.ui.theme.ProfileSummaryScreen
+import com.example.myprofileapp.ui.theme.components.OrdersScreen
 import com.example.myprofileapp.ui.theme.postAdScreens.CreateAdScreen
 import com.example.myprofileapp.ui.theme.postAdScreens.SelectCategoryScreen
 import com.example.myprofileapp.ui.theme.postAdScreens.SelectCityScreen
@@ -21,7 +22,7 @@ fun AppNavigation() {
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val adViewModel: CreateAdViewModel = hiltViewModel()
 
-    NavHost(navController = navController, startDestination = Screen.EditProfile.route) {
+    NavHost(navController = navController, startDestination = Screen.OrdersScreen.route) {
         composable(Screen.EditProfile.route) {
             ProfileContent(
                 viewModel = profileViewModel,
@@ -66,6 +67,10 @@ fun AppNavigation() {
                     }
                 }
             )
+        }
+
+        composable(Screen.OrdersScreen.route) {
+            OrdersScreen()
         }
     }
 }
