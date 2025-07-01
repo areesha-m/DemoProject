@@ -1,5 +1,7 @@
 package com.example.myprofileapp.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -10,12 +12,15 @@ import com.example.myprofileapp.model.CreateAdViewModel
 import com.example.myprofileapp.model.ProfileViewModel
 import com.example.myprofileapp.ui.theme.MyAdsScreen
 import com.example.myprofileapp.ui.theme.ProfileSummaryScreen
-import com.example.myprofileapp.ui.theme.components.OrdersScreen
+import com.example.myprofileapp.ui.theme.components.orders.OrdersScreen
 import com.example.myprofileapp.ui.theme.postAdScreens.CreateAdScreen
 import com.example.myprofileapp.ui.theme.postAdScreens.SelectCategoryScreen
 import com.example.myprofileapp.ui.theme.postAdScreens.SelectCityScreen
 import com.example.myprofileapp.ui.theme.postAdScreens.motorSubCategoryScreens.MotorsSubCategoryScreen
+import com.example.myprofileapp.ui.theme.components.orders.OrderDetailsScreen
+import com.example.myprofileapp.ui.theme.components.orders.OrdersRoot
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
@@ -70,8 +75,9 @@ fun AppNavigation() {
         }
 
         composable(Screen.OrdersScreen.route) {
-            OrdersScreen()
+            OrdersRoot()
         }
+
     }
 }
 

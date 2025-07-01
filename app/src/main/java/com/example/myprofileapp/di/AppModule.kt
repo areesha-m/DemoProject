@@ -9,6 +9,7 @@ import com.example.myprofileapp.data.IProfileRepository
 import com.example.myprofileapp.data.ListingRepository
 import com.example.myprofileapp.data.ProfileRepository
 import com.example.myprofileapp.data.UserProfileDao
+import com.example.myprofileapp.utils.DateFormatterUtil
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -78,5 +79,11 @@ object AppModule {
     ): NetworkChecker {
         return NetworkChecker(context)
     }
+
+    @Provides
+    fun provideDateFormatter(): DateFormatterUtil {
+        return DateFormatterUtil()
+    }
+
 }
 
