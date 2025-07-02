@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
@@ -14,7 +15,8 @@ fun OrderListContent(
     displayItems: List<Any>,
     selectedTab: Int,
     modifier: Modifier = Modifier,
-    navController: NavController
+    navController: NavController,
+    lazyListState: LazyListState
 ) {
     LazyColumn(
         modifier = modifier,
@@ -22,9 +24,10 @@ fun OrderListContent(
             start = 16.dp,
             end = 16.dp,
             top = 16.dp,
-            bottom = if (selectedTab == 0) 50.dp else 16.dp
+            bottom = if (selectedTab == 0) 100.dp else 16.dp
         ),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        state = lazyListState
     ) {
         items(displayItems) { item ->
             when (item) {

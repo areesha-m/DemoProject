@@ -1,16 +1,15 @@
 package com.example.myprofileapp.ui.theme.components.orders
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.background
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -35,15 +35,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myprofileapp.R
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FabPosition
+import androidx.compose.ui.Alignment
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,14 +58,19 @@ fun OrdersScreenLayout(
     onSearchClick: () -> Unit,
     tabsContent: @Composable () -> Unit,
     orderListContent: @Composable (Modifier) -> Unit,
-    isFilterDrawerOpen: Boolean,
-    onCloseFilterDrawer: () -> Unit,
+    isFilterSheetOpen: Boolean,
+    onCloseFilterSheet: () -> Unit,
     selectedFilter: String?,
     onFilterSelected: (String) -> Unit,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     isSearching: Boolean,
+    showFilterFab: Boolean,
+    onFabClick: () -> Unit
 ) {
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
@@ -157,7 +167,35 @@ fun OrdersScreenLayout(
                         .height(105.dp)
                 )
             },
-            containerColor = Color(0xFFF5F5F5)
+            containerColor = Color(0xFFF5F5F5),
+            floatingActionButton = {
+                AnimatedVisibility(
+                    visible = showFilterFab,
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
+                    modifier = Modifier.padding(bottom = 4.dp, end = 4.dp)
+                ) {
+                    ExtendedFloatingActionButton(
+                        onClick = onFabClick,
+                        icon = { Icon(
+                            painter = painterResource(R.drawable.status),
+                            contentDescription = "Status filter",
+                            modifier = Modifier
+                        ) },
+                        text = { Text("Status", fontSize = 16.sp) },
+                        shape = RoundedCornerShape(10.dp),
+                        containerColor = Color.White,
+                        contentColor = Color.Black,
+                        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+                        modifier = Modifier.border(
+                            width = 1.dp,
+                            color = Color(0xFFC0C0C0),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    )
+                }
+            },
+            floatingActionButtonPosition = FabPosition.Center
         ) { paddingValues ->
             Column(
                 modifier = Modifier
@@ -167,44 +205,70 @@ fun OrdersScreenLayout(
                 tabsContent()
                 orderListContent(Modifier.fillMaxSize())
             }
+            if (isFilterSheetOpen) {
 
-            RightSideDrawer(
-                isOpen = isFilterDrawerOpen,
-                onClose = onCloseFilterDrawer,
-                topPadding = 88.dp
-            ) {
-                Spacer(modifier = Modifier.height(32.dp))
+                ModalBottomSheet(
+                    onDismissRequest = { onCloseFilterSheet() },
+                    sheetState = sheetState,
+                    dragHandle = null,
+                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
 
-                Text("Filter Orders", fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.padding(start = 16.dp))
+                        Spacer(modifier = Modifier.height(32.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "Filter Orders",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 24.sp,
+                            modifier = Modifier.fillMaxWidth().padding(start = 12.dp)
+                        )
 
-                listOf("0", "1", "2", "3").forEach { status ->
-                    TextButton(onClick = {
-                        onFilterSelected(status)
-                    }) {
-                        when (status) {
-                            "0" -> Text(text = "- All Orders",
-                                color = Color.Black,
-                                fontWeight = if (selectedFilter == status) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 16.sp
-                            )
-                            "1" -> Text(text = "- In Progress",
-                                color = Color.Black,
-                                fontWeight = if (selectedFilter == status) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 16.sp
-                            )
-                            "2" -> Text(text = "- Cancel/Return",
-                                color = Color.Black,
-                                fontWeight = if (selectedFilter == status) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 16.sp
-                            )
-                            "3" -> Text(text = "- Delivered",
-                                color = Color.Black,
-                                fontWeight = if (selectedFilter == status) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 16.sp
-                            )
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        listOf("0", "1", "2", "3").forEachIndexed { index, status ->
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                TextButton(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onClick = {
+                                        onFilterSelected(status)
+                                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                            if (!sheetState.isVisible) {
+                                                onCloseFilterSheet()
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Text(
+                                        text = when (status) {
+                                            "0" -> "All Orders"
+                                            "1" -> "In Progress"
+                                            "2" -> "Cancel/Return"
+                                            "3" -> "Delivered"
+                                            else -> ""
+                                        },
+                                        color = Color.Black,
+                                        fontWeight = if (selectedFilter == status) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 16.sp,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Start
+                                    )
+                                }
+                                if (index < 3) { // Add divider for all but the last item
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = 5.dp),
+                                        thickness = 1.dp,
+                                        color = Color.LightGray
+                                    )
+                                }
+                            }
                         }
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
             }
@@ -212,52 +276,3 @@ fun OrdersScreenLayout(
     }
 }
 
-@Composable
-fun RightSideDrawer(
-    isOpen: Boolean,
-    topPadding: Dp = 0.dp,
-    onClose: () -> Unit,
-    drawerWidth: Dp = 250.dp,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        if (isOpen) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.3f))
-                    .clickable { onClose() }
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .width(drawerWidth)
-                .align(Alignment.CenterEnd)
-                .padding(top = topPadding)
-
-        ) {
-            AnimatedVisibility(
-                visible = isOpen,
-                enter = slideInHorizontally(
-                    initialOffsetX = { it },
-                    animationSpec = tween(300)
-                ),
-                exit = slideOutHorizontally(
-                    targetOffsetX = { it },
-                    animationSpec = tween(300)
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White)
-                        .padding(16.dp)
-                ) {
-                    content()
-                }
-            }
-        }
-    }
-}

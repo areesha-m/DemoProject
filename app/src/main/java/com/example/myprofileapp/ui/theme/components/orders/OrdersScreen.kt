@@ -25,6 +25,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.myprofileapp.R
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.HorizontalPager
+import kotlinx.coroutines.launch
 
 data class OrderStatus(
     val type: String,
@@ -102,7 +106,7 @@ val allOrders = listOf(
         ),
     OrderItem(
         id = 4,
-        title = "Samsung 74 4K Smart 3D Blu-ray 1330watts Wireless Bluetooth",
+        title = "Samsung 64 4K Smart 3D Blu-ray 1330watts Wireless Bluetooth",
         price = "AED 3,100",
         expectedDate = "2024-12-20",
         orderNumber = "P23494",
@@ -114,7 +118,7 @@ val allOrders = listOf(
     ),
     OrderItem(
         id = 5,
-        title = "Samsung 74 4K Smart 3D Blu-ray 1330watts Wireless Bluetooth",
+        title = "Samsung 7.4 4K Smart 3D Blu-ray 1330watts Wireless Bluetooth",
         price = "AED 3,100",
         expectedDate = "2024-12-20",
         orderNumber = "P23493",
@@ -168,7 +172,7 @@ fun OrdersScreen(navController: NavController) {
     val processingOrders = allOrders.filter { it.status == OrderStatus.processing }
     val cancelReturnOrders = allOrders.filter { it.status == OrderStatus.cancelled }
 
-    var isFilterDrawerOpen by remember { mutableStateOf(false) }
+    var isFilterSheetOpen by remember { mutableStateOf(false) }
     var selectedFilter by remember { mutableStateOf<String?>("0") }
 
     var isSearching by remember { mutableStateOf(false) }
@@ -181,51 +185,51 @@ fun OrdersScreen(navController: NavController) {
         TabItem("Delivered", deliveredOrders.size)
     )
 
-    val selectedOrders = remember(selectedTab, selectedFilter, searchQuery) {
-        val filtered = when (selectedTab) {
-            0 -> when (selectedFilter) {
-                "0" -> allOrders
-                "1" -> processingOrders
-                "2" -> cancelReturnOrders
-                "3" -> deliveredOrders
-                else -> allOrders
-            }
-            1 -> processingOrders
-            2 -> cancelReturnOrders
-            3 -> deliveredOrders
-            else -> allOrders
-        }
-        if (searchQuery.isNotBlank()) {
-            filtered.filter { it.title.contains(searchQuery, ignoreCase = true) }
-        } else filtered
+    val lazyListState = rememberLazyListState()
 
-    }
 
-    val displayItems = remember(selectedOrders) {
-        val result = mutableListOf<Any>()
-        val addedOrderIds = mutableSetOf<Int>()
-        for (order in selectedOrders) {
-            if (addedOrderIds.contains(order.id)) {
-                continue
-            }
+    val pagerState = rememberPagerState(pageCount = { tabs.size })
+    val coroutineScope = rememberCoroutineScope()
+    val previousFirstVisibleItemIndex = remember { mutableIntStateOf(lazyListState.firstVisibleItemIndex) }
+    val previousScrollOffset = remember { mutableIntStateOf(0) }
 
-            val matchingOrders = selectedOrders.filter {
-                it.seller == order.seller && it.status == order.status
-            }
+    val showFilterFab by remember {
+        derivedStateOf {
+            val isAtVeryTop = lazyListState.firstVisibleItemIndex == 0 && lazyListState.firstVisibleItemScrollOffset == 0
+            val isAtVeryBottom =
+                lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index == lazyListState.layoutInfo.totalItemsCount - 1 &&
+                        (lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.offset
+                            ?: 0) <= 0 &&
+                        lazyListState.layoutInfo.totalItemsCount > 0
 
-            if (matchingOrders.size > 1) {
-                result.add(matchingOrders)
-                addedOrderIds.addAll(matchingOrders.map { it.id })
+            val currentScrollOffset = lazyListState.firstVisibleItemScrollOffset
+            val scrolledUp = lazyListState.isScrollInProgress && currentScrollOffset < previousScrollOffset.intValue
+            val scrolledDown = lazyListState.isScrollInProgress && currentScrollOffset > previousScrollOffset.intValue
+
+            previousScrollOffset.intValue = currentScrollOffset
+            if (selectedTab == 0 && !isFilterSheetOpen) {
+                when {
+                    isAtVeryTop -> true
+                    isAtVeryBottom -> true
+                    scrolledUp -> true
+                    scrolledDown -> false
+                    else -> true
+                }
             } else {
-                result.add(order)
-                addedOrderIds.add(order.id)
+                false
             }
         }
-        result
     }
 
+    LaunchedEffect(pagerState.currentPage) {
+        selectedTab = pagerState.currentPage
+    }
+
+    LaunchedEffect(remember { derivedStateOf { lazyListState.firstVisibleItemIndex } }) {
+        previousFirstVisibleItemIndex.intValue = lazyListState.firstVisibleItemIndex
+    }
     OrdersScreenLayout(
-        onFilterClick = { isFilterDrawerOpen = !isFilterDrawerOpen },
+        onFilterClick = { isFilterSheetOpen = !isFilterSheetOpen },
         onBackClick = { },
         onSearchClick = {
             isSearching = !isSearching
@@ -236,37 +240,91 @@ fun OrdersScreen(navController: NavController) {
             OrderTabs(
                 tabs = tabs,
                 selectedTabIndex = selectedTab,
-                onTabSelected = { index -> selectedTab = index }
+                onTabSelected = { index ->
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(index)
+                    }
+                }
             )
         },
-        orderListContent = { modifier ->
-            OrderListContent(
-                displayItems = displayItems,
-                selectedTab = selectedTab,
-                modifier = modifier,
-                navController = navController
-            )
+        orderListContent = {
+                modifier ->
+            HorizontalPager(
+                state = pagerState,
+                modifier = modifier
+            ) { page ->
+                val currentDisplayItems = remember(page, selectedFilter, searchQuery) {
+                    val filteredByTab = when (page) {
+                        0 -> allOrders
+                        1 -> processingOrders
+                        2 -> cancelReturnOrders
+                        3 -> deliveredOrders
+                        else -> allOrders
+                    }
+
+                    val filteredBySearch = if (searchQuery.isNotBlank()) {
+                        filteredByTab.filter { it.title.contains(searchQuery, ignoreCase = true) }
+                    } else {
+                        filteredByTab
+                    }
+
+                    var result = mutableListOf<Any>()
+                    val addedOrderIds = mutableSetOf<Int>()
+                    for (order in filteredBySearch) {
+                        if (addedOrderIds.contains(order.id)) {
+                            continue
+                        }
+
+                        val matchingOrders = filteredBySearch.filter {
+                            it.seller == order.seller && it.status == order.status
+                        }
+
+                        if (matchingOrders.size > 1) {
+                            result.add(matchingOrders)
+                            addedOrderIds.addAll(matchingOrders.map { it.id })
+                        } else {
+                            result.add(order)
+                            addedOrderIds.add(order.id)
+                        }
+                    }
+                    result
+                }
+                OrderListContent(
+                    displayItems = currentDisplayItems,
+                    selectedTab = page,
+                    modifier = Modifier.fillMaxSize(),
+                    navController = navController,
+                    lazyListState = lazyListState
+                )
+            }
         },
-        isFilterDrawerOpen = isFilterDrawerOpen,
-        onCloseFilterDrawer = {
-            isFilterDrawerOpen = false
+        isFilterSheetOpen = isFilterSheetOpen,
+        onCloseFilterSheet = {
+            isFilterSheetOpen = false
             selectedFilter = "0"
         },
         selectedFilter = selectedFilter,
         onFilterSelected = { status ->
             selectedFilter = status
-            isFilterDrawerOpen = false
-            selectedTab = when (status) {
-                "0" -> 0 // All Orders
-                "1" -> 1 // In Progress
-                "2" -> 2 // Cancel/Return
-                "3" -> 3 // Delivered
-                else -> 0
+            isFilterSheetOpen = false
+            coroutineScope.launch {
+                pagerState.animateScrollToPage(
+                    when (status) {
+                        "0" -> 0 // All Orders
+                        "1" -> 1 // In Progress
+                        "2" -> 2 // Cancel/Return
+                        "3" -> 3 // Delivered
+                        else -> 0
+                    }
+                )
             }
         },
         searchQuery = searchQuery,
         onSearchQueryChange = { searchQuery = it },
         isSearching = isSearching,
+        showFilterFab = showFilterFab,
+        onFabClick = { isFilterSheetOpen = !isFilterSheetOpen }
+
     )
 }
 
