@@ -1,9 +1,11 @@
+import org.gradle.kotlin.dsl.implementation
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
-
+    alias(libs.plugins.hilt.android.gradle) // Apply Hilt plugin
 }
 
 android {
@@ -42,21 +44,25 @@ android {
 }
 
 dependencies {
-
+    implementation(libs.okhttp)
+    implementation(libs.retrofit.v290)
+    implementation(libs.converter.gson.v290)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.transport.api)
+    implementation(libs.okhttp3.logging.interceptor)
+    implementation(libs.material3)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.firebase.components)
+    implementation(libs.androidx.media3.common.ktx)
     testImplementation(libs.junit)
+    implementation(libs.coil.compose) // Check for the latest version of Coil
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -68,4 +74,8 @@ dependencies {
     ksp(libs.room.compiler)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.hilt.navigation.compose)
+
 }
