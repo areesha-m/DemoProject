@@ -2,6 +2,10 @@ package com.example.myprofileapp.ui.theme.components.orders
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -146,7 +150,20 @@ val allOrders = listOf(
 fun OrdersRoot() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "orders") {
+    NavHost(navController = navController,
+        startDestination = "orders",
+        enterTransition = {
+            slideInHorizontally(initialOffsetX = { it }) + fadeIn()
+        },
+        exitTransition = {
+            slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+        },
+        popEnterTransition = {
+            slideInHorizontally(initialOffsetX = { -it }) + fadeIn()
+        },
+        popExitTransition = {
+            slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
+        }) {
         composable("orders") {
             OrdersScreen(navController = navController)
         }
@@ -157,7 +174,7 @@ fun OrdersRoot() {
                 orderIds = ids,
                 allOrders = allOrders,
                 onBackClick = { navController.popBackStack() }
-                )
+            )
         }
     }
 }
@@ -268,7 +285,7 @@ fun OrdersScreen(navController: NavController) {
                         filteredByTab
                     }
 
-                    var result = mutableListOf<Any>()
+                    val result = mutableListOf<Any>()
                     val addedOrderIds = mutableSetOf<Int>()
                     for (order in filteredBySearch) {
                         if (addedOrderIds.contains(order.id)) {
@@ -543,7 +560,7 @@ fun OrderContent(order: OrderItem) {
                     containerColor = Color(0xFFFFFFFF),
                 ),
                 border = BorderStroke(0.75.dp, Color(0xFFC3CBDA)),
-                modifier = Modifier.weight(1f),
+                //modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(10.dp),
             ) {
                 Row(

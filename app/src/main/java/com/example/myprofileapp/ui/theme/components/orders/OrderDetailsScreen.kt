@@ -32,7 +32,11 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.myprofileapp.R
 import com.example.myprofileapp.utils.DateFormatterUtil
+import kotlinx.coroutines.delay
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -56,6 +61,8 @@ fun OrderDetailsScreen(orderIds: List<Int>, allOrders: List<OrderItem>, onBackCl
     val orders = allOrders.filter { it.id in orderIds }
     val firstOrder = orders.firstOrNull()
     val dateFormatterUtil = remember { DateFormatterUtil() }
+    var showReturnItemSheet by remember { mutableStateOf<OrderItem?>(null) }
+    var isLoadingReturnSheet by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -240,7 +247,6 @@ fun OrderDetailsScreen(orderIds: List<Int>, allOrders: List<OrderItem>, onBackCl
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            // Product Info
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -331,7 +337,7 @@ fun OrderDetailsScreen(orderIds: List<Int>, allOrders: List<OrderItem>, onBackCl
                                 }
 
                                 Button(
-                                    onClick = { },
+                                    onClick = { showReturnItemSheet = order },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color.White,
                                     ),
@@ -549,6 +555,25 @@ fun OrderDetailsScreen(orderIds: List<Int>, allOrders: List<OrderItem>, onBackCl
                     }
                 }
             }
+        }
+        showReturnItemSheet?.let { order ->
+            LaunchedEffect(showReturnItemSheet) {
+                delay(10000) // 2-second artificial delay
+                isLoadingReturnSheet = false // Set loading to false after delay
+            }
+
+            ReturnItemBottomSheet(
+                orderItem = order,
+                onDismiss = {
+                    showReturnItemSheet = null
+                    isLoadingReturnSheet = false // Reset loading state on dismiss
+                },
+                onContinueClick = {
+                    showReturnItemSheet = null
+                    isLoadingReturnSheet = false // Reset loading state on continue
+                },
+                isLoading = isLoadingReturnSheet // Pass the loading state
+            )
         }
     }
 }

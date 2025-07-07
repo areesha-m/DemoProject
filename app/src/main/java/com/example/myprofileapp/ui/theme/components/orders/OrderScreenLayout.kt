@@ -81,7 +81,6 @@ fun OrdersScreenLayout(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center
-
                             ) {
                                 IconButton (onClick = {}){
                                     Icon(
@@ -146,14 +145,6 @@ fun OrdersScreenLayout(
                     },
                     actions = {
                         if (!isSearching) {
-                            IconButton(onClick = onFilterClick) {
-                                Icon(
-                                    painter = painterResource(R.drawable.status),
-                                    contentDescription = "Status filter",
-                                    modifier = Modifier
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(1.dp))
                             IconButton(onClick = { onSearchClick() }) {
                                 Icon(
                                     Icons.Default.Search,
@@ -164,7 +155,7 @@ fun OrdersScreenLayout(
                     },
                     modifier = Modifier
                         .shadow(4.dp)
-                        .height(105.dp)
+                        //.height(105.dp)
                 )
             },
             containerColor = Color(0xFFF5F5F5),
@@ -211,7 +202,8 @@ fun OrdersScreenLayout(
                     onDismissRequest = { onCloseFilterSheet() },
                     sheetState = sheetState,
                     dragHandle = null,
-                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                    containerColor = Color.White
                 ) {
                     Column(
                         modifier = Modifier
@@ -259,7 +251,7 @@ fun OrdersScreenLayout(
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Start
                                     )
                                 }
-                                if (index < 3) { // Add divider for all but the last item
+                                if (index < 3) {
                                     HorizontalDivider(
                                         modifier = Modifier.padding(vertical = 5.dp),
                                         thickness = 1.dp,

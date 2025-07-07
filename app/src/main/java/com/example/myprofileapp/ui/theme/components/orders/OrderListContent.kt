@@ -24,7 +24,7 @@ fun OrderListContent(
             start = 16.dp,
             end = 16.dp,
             top = 16.dp,
-            bottom = if (selectedTab == 0) 100.dp else 16.dp
+            bottom = if (selectedTab == 0) 90.dp else 16.dp
         ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         state = lazyListState
